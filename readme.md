@@ -1,5 +1,5 @@
 1. incluir entornos virtuales
-    python -m venv venv
+    py -m venv venv
 2. activar entorno virtual
     .\venv\Scripts\Activate
 
@@ -17,3 +17,6 @@
 (venv) PS C:\Users\danny\OneDrive\Escritorio\Tkinter-app> cd .\executable\
 remove all from executable folder (desactivar venv)
 (venv) PS C:\Users\danny\OneDrive\Escritorio\Tkinter-app\executable> pyinstaller --onefile ..\main.py 
+
+6. pip list
+    - pip install pyinstaller

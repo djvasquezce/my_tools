@@ -1,6 +1,7 @@
 import subprocess
 import re
 import time
+from datetime import datetime
 import threading
 class PingHandler:
     def __init__(self, host, app):
@@ -16,28 +17,60 @@ class PingHandler:
     def start_ping(self):
         while True:
             comando = ["ping", self.host]
-            salida = subprocess.run(comando, capture_output=True, text=True)
+            output = subprocess.run(comando, capture_output=True, text=True)
+            lineas_tiempo = []
 
-            
-            lineas_tiempo = re.findall(r'tiempo=\d+ms', salida.stdout)
+            text = ""
+            salida = re.findall(r'tiempo=\d+ms', output.stdout)
 
-            #si no hay lineas de tiempo buscar La solicitud de ping no pudo encontrar el host www.google.com. Compruebe el nombre y vuelva a intentarlo."
+            for linea in salida:
+                text = linea
+                if(int(linea.split('=')[1].replace('ms', '')) > 85):
+                    lineas_tiempo.append(linea)
+
+           
             if(len(lineas_tiempo) == 0):
-                text = re.findall(r'La solicitud de ping', salida.stdout)
-                if(len(text) > 0):
+                salida = re.findall(r'La solicitud de ping', output.stdout)
+                if(len(salida) > 0):
+                    text = "DESCONECTADO TOTALMENTE"
                     lineas_tiempo.append("DESCONECTADO TOTALMENTE")
 
             if(len(lineas_tiempo) == 0):
-                text = re.findall(r'Host de destino inaccesible.', salida.stdout)
-                if(len(text) > 0):
-                    lineas_tiempo.append("DESCONECTADO TOTALMENTE")
+                salida = re.findall(r'Tiempo de espera', output.stdout)
+                if(len(salida) > 0):
+                    text = "Tiempo de espera agotado para esta solicitud"
+                    lineas_tiempo.append("Tiempo de espera agotado para esta solicitud")
                 
 
-
-            for linea in lineas_tiempo:
-                print(linea)
-
-            self.app.update_text(lineas_tiempo)
+            self.app.update_text(text)
+            
+            if len(lineas_tiempo) > 0:
+                self.save_log_ping(lineas_tiempo)
 
             time.sleep(1)
+
+    def save_log_ping(self, lineas_tiempo):
+        fecha_actual = datetime.now().strftime("%Y_%m_%d")
+        nombre_archivo = f"log_{fecha_actual}.log"
+
+        with open(nombre_archivo, "a") as log_file:
+            pass
+
+        with open(nombre_archivo, "r") as log_file:
+            all_lines_log = log_file.readlines()
+            if len(all_lines_log) > 0:
+                if 'DESCONECTADO' in all_lines_log[-1] and 'DESCONECTADO' in  lineas_tiempo[-1]:
+                    return
+                
+                print(lineas_tiempo)
+                if 'Tiempo de espera' in all_lines_log[-1] and 'Tiempo de espera' in  lineas_tiempo[-1]:
+                    return
+        
+        with open(nombre_archivo, "a") as log_file:
+            for linea in lineas_tiempo:
+                log_file.write(linea + "-----[fecha: " + fecha_actual + "  hora: " + datetime.now().strftime("%H:%M:%S") + "]\n")
+    def stop_thread_ping(self):
+        if self.ping_thread is not None and self.ping_thread.is_alive():
+            self.ping_thread.join()
+            self.ping_thread = None
   
